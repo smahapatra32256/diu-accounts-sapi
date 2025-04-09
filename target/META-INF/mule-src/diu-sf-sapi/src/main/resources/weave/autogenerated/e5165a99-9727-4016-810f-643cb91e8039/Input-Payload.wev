@@ -1,0 +1,13 @@
+%dw 2.0
+
+type auto_e5165a99_9727_4016_810f_643cb91e8039_Input_Payload = {|
+  dlIssueDate?: String, 
+  ssnLast4: String, 
+  stateId?: String, 
+  dl?: String, 
+  dateOfBirth: String, 
+  tvdl?: String, 
+  stateIdIssueDate?: String
+|} {"label": "Id Validation",
+"description": "Id Validation"}
+

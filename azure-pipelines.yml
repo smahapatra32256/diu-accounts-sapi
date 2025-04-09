@@ -1,0 +1,107 @@
+trigger: 
+- main
+
+resources:
+  repositories:
+  - repository: cicd-master-config
+    type: git
+    name: ILSOSMuleSoft/cicd-master-config
+  - repository: maven-binary
+    type: git
+    name: ILSOSMuleSoft/maven-binary
+
+variables:
+- group: secrets
+- template: templates/common.yml@cicd-master-config
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Build
+
+  jobs:
+  - template: templates/pom.yml@cicd-master-config
+
+  - job: BuildMulesoft
+    dependsOn: Pom
+    condition: true
+    displayName: Build Mulesoft
+    variables:
+    - template: templates/pom-variables.yml@cicd-master-config
+
+    steps:
+    - task: CmdLine@2
+      displayName: 'MUNIT config'
+      inputs:
+        script: |
+          MUNIT_CONFIGURATION=" \
+            -Djks.path=ssl/DHT9fNlQuGU1hIaft.p12 \
+            -Djks.keypassword=$(https_dev_jkskeypassword) \
+            -Djks.alias=https_certificate_dev \
+            -Dglobalerror.log=false \
+            -Dglobalerror.notification=false \
+            -Dglobalerror.description=true \
+            -Dresttool.logexception=true"
+          echo "##vso[task.setvariable variable=MUNIT_CONFIGURATION;]$MUNIT_CONFIGURATION"
+
+    - template: templates/build.yml@cicd-master-config
+
+- stage: Release
+  dependsOn: Build
+
+  jobs:
+  - job: Deployment
+    displayName: Deploy Mulesoft
+    variables:
+     servicename: $[stageDependencies.Build.Pom.outputs['parsePom.servicename']]
+     serviceversion: $[stageDependencies.Build.Pom.outputs['parsePom.serviceversion']]
+     servicegroup: $[stageDependencies.Build.Pom.outputs['parsePom.servicegroup']]
+     serviceartifact: $[stageDependencies.Build.Pom.outputs['parsePom.serviceartifact']]
+
+    steps:
+    - task: CmdLine@2
+      displayName: 'Configuration'
+      inputs:
+        script: |
+          # Provide the runtime and service configuration for dev environtment
+          APPLICATION_PARAMETERS=" \
+            --property anypoint.platform.client_id:$(anypoint_environment_dev_clientid)  \
+            --property anypoint.platform.client_secret:$(anypoint_environment_dev_secret) \
+            --property api.id:19857753 \
+            --property env:dev \
+            --property jks.path:ssl/DHT9fNlQuGU1hIaft.p12 \
+            --property jks.keypassword:$(https_dev_jkskeypassword) \
+            --property jks.alias:https_certificate_dev \
+            --property globalerror.notification:false \
+            --property globalerror.log:false \
+            --property globalerror.description:true \
+            --property ibmctg.servername:$(ibmctg_dev_servername) \
+            --property ibmctg.password:$(ibmctg_dev_password) \
+            --property ibmctg.host:$(ibmctg_dev_host) \
+            --property ibmctg.username:$(ibmctg_dev_servername) \
+            --property db2.password:$(db2_dev_password) \
+            --property db2.url:$(db2_dev_url) \
+            --property db2.user:$(db2_dev_user) \
+            --replicas 1 \
+            --replicaSize 0.1 \
+            --updateStrategy recreate \
+            --objectStoreV2 \
+            --lastMileSecurity \
+            --assetVersion $SERVICEVERSION"
+          
+          MULESOFT_RUNTIME="4.7.1"
+          CONFIGURATION_DEPLOYMENT_NAME="$SERVICENAME-dev"
+          CONFIGURATION_DEPLOYMENT_TARGETID="4be57b94-8349-4246-b0e5-ed4c4832bb66"
+          CONFIGURATION_DEPLOYMENT_ORGANIZATION="0fa744b1-1284-46c5-b23c-0eb98ea787e3"
+          CONFIGURATION_ENVIRONMENT="Development"
+
+          # Next variables provide are required for deployment scripts
+          echo "##vso[task.setvariable variable=APPLICATION_PARAMETERS;]$APPLICATION_PARAMETERS"
+          echo "##vso[task.setvariable variable=MULESOFT_RUNTIME;]$MULESOFT_RUNTIME"
+          echo "##vso[task.setvariable variable=CONFIGURATION_DEPLOYMENT_NAME;]$CONFIGURATION_DEPLOYMENT_NAME"
+          echo "##vso[task.setvariable variable=CONFIGURATION_DEPLOYMENT_TARGETID;]$CONFIGURATION_DEPLOYMENT_TARGETID"
+          echo "##vso[task.setvariable variable=CONFIGURATION_DEPLOYMENT_ORGANIZATION;]$CONFIGURATION_DEPLOYMENT_ORGANIZATION"
+          echo "##vso[task.setvariable variable=CONFIGURATION_ENVIRONMENT;]$CONFIGURATION_ENVIRONMENT"
+
+    - template: templates/deployment.yml@cicd-master-config

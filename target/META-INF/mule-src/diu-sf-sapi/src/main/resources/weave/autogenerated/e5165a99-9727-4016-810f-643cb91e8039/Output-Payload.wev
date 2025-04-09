@@ -1,0 +1,11 @@
+%dw 2.0
+
+type auto_e5165a99_9727_4016_810f_643cb91e8039_Output_Payload = {|
+  correlationId: String, 
+  location?: String, 
+  message: String, 
+  processingTime?: String, 
+  status: Number
+|} {"description": "Service metadata",
+"label": "Service Metadata"}
+
