@@ -1,84 +1,26 @@
-# ilsos-drivers-sapi
-![Powered by](https://img.shields.io/badge/Powered%20by-Mulesoft-535597.svg)
-<br>
+# diu-accounts-sapi
 
-Drivers System API
+Common configurations for Mulesoft projects
 
 ## Table of contents
 1. [Description](#description)
-1. [Endpoints](#endpoints)
-    1. [PUT /address-change](#put-address-change)
-    1. [PUT /id-validation](#put-id-validation)
-    
-    
-           
 
 ## Description
-The API provides the backend services for the Drivers Address Change business case. The next diagram shows the architecture
 
-![architecture](./media/architecture.png)
+Multiple common components like flows, sub-flows, etc. to be re-used across the Mule projects. For example, common sub-flows can be used for logging, error-handling, shared business logic, etc.
 
-This service implements the next API specification: https://anypoint.mulesoft.com/exchange/0fa744b1-1284-46c5-b23c-0eb98ea787e3/ilsos-drivers-sapi/minor/1.0/
+1. Reusability: Common assets allow you to reuse existing components across multiple projects. This reduces development time and effort since you don't need to recreate the same functionality from scratch each time. By leveraging common assets, you can ensure consistency, standardization, and maintainability across your projects.
+2. Consistency: When you have common assets, you establish a consistent development approach and design patterns across different projects. This promotes uniformity and makes it easier for developers to understand and maintain the codebase. It also helps in enforcing best practices and following established architectural guidelines.
+3. Efficiency: By having a library of common assets, you can accelerate development cycles and deliver projects faster. Instead of reinventing the wheel, developers can focus on building business-specific logic while leveraging existing, tested, and reliable components.
+4. Maintainability: When changes or updates are required, having common assets simplifies the maintenance process. You only need to modify the common asset in one place, and the changes will propagate to all projects using it. This reduces the effort required to fix issues, implement enhancements, or apply security patches.
+5. Scalability: Common assets enable scalability by providing a foundation for building complex integration solutions. They allow you to easily add new features or functionalities to your projects without starting from scratch. As your organization grows and requirements evolve, having reusable components becomes even more crucial for efficiently managing the integration landscape.
+6. Collaboration: Common assets foster collaboration among developers and teams. When everyone works with the same set of components, it promotes knowledge sharing, reusability, and collaboration across projects. Developers can learn from each other's work, share insights, and contribute to improving the common assets, which ultimately benefits the entire organization.
 
-## Endpoints
-The service provides the next endpoints:
+In summary, having a project with common assets like flows, configurations, and other reusable components brings numerous benefits, including reusability, consistency, efficiency, maintainability, scalability, and collaboration. It empowers developers to build integration solutions more effectively, accelerates development cycles, and ensures high-quality and reliable outcomes.
 
-### PUT /address-change
-Update the driver address.
+<br>
 
-The next diagram shows the business sequence of messages or events exchanged between the several backend systems.
+---
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant eapi as ilsos-addresschange-eapi
-    participant api as ilsos-drivers-sapi
-    participant db2 as DB2
-    participant mainframe as MainFrame
-
-    eapi->>api:PUT/address-change <br>Input:vin,dept,addrverifification(boolean),beginTransDatetime<br>dl,Id,last4ssn,DOB<br>street,city,state,zipCode, county,<br>countyCode,trueClientIP,dlIssueDate,IdIssueDate and tvdl
-
-    note over db2:DP_ADDRCHG_TRANS
-    note over mainframe:CICS:dsf02gOut
-    api-->>api:Dataweave - format records for db2<BR> DP_ADDRCHG_TRANS TABLE.<br>Input:vin,dept,addrverifification(boolean),beginTransDatetime<br>dl,Id,last4ssn,<br>street,city,state,zipCode,county,<br>countyCode,trueClientIP,dlIssueDate,IdIssueDate and tvdl
-    api-->>db2:Update
-    api-->>api:Log response. If db2 access error, then send email to admin
-    alt Error Scenario 
-        api-->eapi: Status 400 or 500 , detail error message
-    end
-    api-->>api:Dataweave - format records for mainframe CICS(dsf02gOut)<br> Input:idTransaction("DSF1" or "DSF2")addrverification(boolean),dl,Id,dob<br>street,city,state,zipCode, county,<br>and voter registration(Y or N)
-    api-->>mainframe:Update driver record
-    mainframe-->>api:Retrieve CICS code.
-    api-->>api:Log response. If mainframe access error, then send email to admin<br>anything other then 0 is error from cics
-    alt Success Scenario 
-        api-->eapi: Status 200 
-    end
-    alt Error Scenario 
-        api-->eapi: Status 400 or 500 , cics error code
-    end
-  ```
-
-
-### PUT /id-validation
-Validates the drivers license or state ID.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant eapi as ilsos-addresschange-eapi
-    participant api as ilsos-drivers-sapi
-    participant mainframe as MainFrame
-    
-    eapi->>api:PUT/id-validation <br>Input: dl,Id and last4ssn
-    note over mainframe:CICS:dsf02gOut
-    api-->>api:Dataweave - format records for mainframe CICS(dsf02gOut).
-    api-->>mainframe:Validate input data.
-    mainframe-->>api:Retrieve CICS code.
-    api-->>api:Log response. If mainframe access error, then send email to admin
-    alt Success Scenario 
-        api-->eapi: Status 200
-    end
-    alt Error Scenario 
-        api-->eapi: Status 400 or 500, cics error code 
-    end
-```
+- [Markdown Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
+- [Mulesoft Documentation](https://docs.mulesoft.com/general/)
